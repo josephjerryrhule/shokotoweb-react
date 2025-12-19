@@ -1,7 +1,7 @@
-import React from "react";
 import HeroSlide from "../components/home/heroslide";
 import CollectionSection from "../components/home/collectionsection";
 import HypeSection from "../components/home/hypesection";
+import ProductsSlide from "../components/home/productsslide";
 
 function Home() {
   return (
@@ -14,6 +14,9 @@ function Home() {
       </section>
       <section className="hype-section">
         <HypeSection />
+      </section>
+      <section className="products-slide-section">
+        <ProductsSlide />
       </section>
     </main>
   );
