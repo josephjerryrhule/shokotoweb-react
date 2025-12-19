@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "DM Sans";
+  src: url(./assets/fonts/DMSans.ttf) format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Scotch Display";
+  src: url(./assets/fonts/ScotchDisplayCond-Rm.ttf) format("truetype");
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Scotch Display";
+  src: url(./assets/fonts/ScotchDisplayCond-LtIt.ttf) format("truetype");
+  font-display: swap;
+  font-style: italic;
+}
+
+:root {
+  --navpadding: 0.94rem clamp(1rem, calc(4.0282px + 3.192488vw), 3.125rem);
+  --logomaxw: clamp(7.188rem, calc(83.662px + 8.356808vw), 12.75rem);
+  --heroslide-height: clamp(25.5rem, calc(260.8169px + 39.248826vw), 51.625rem);
+  --heroslide-padding: 3.13rem
+    clamp(0.938rem, calc(2.6761px + 3.286385vw), 3.125rem);
+  --titles: clamp(2.5rem, calc(32.9577px + 1.877934vw), 3.75rem);
+  --subtitles: clamp(1.875rem, calc(26.4789px + 0.938967vw), 2.5rem);
+  --bodytext: clamp(0.875rem, calc(13.2958px + 0.187793vw), 1rem);
+  --pricetext: clamp(1.25rem, calc(17.1831px + 0.751174vw), 1.75rem);
+  --heroslide-titlemaxw: clamp(
+    23.438rem,
+    calc(335.9155px + 10.422535vw),
+    30.375rem
+  );
+
+  --collectionsection-padding: clamp(
+      2.125rem,
+      calc(18.8592px + 4.037559vw),
+      4.813rem
+    )
+    clamp(0.938rem, calc(2.6761px + 3.286385vw), 3.125rem);
+  --collectionsection-gap: clamp(
+    2.125rem,
+    calc(18.507px + 4.131455vw),
+    4.875rem
+  );
+  --collectionimg-height: clamp(
+    23.375rem,
+    calc(225.7606px + 39.530516vw),
+    49.688rem
+  );
+  --hypesection-gap:clamp(2.375rem, calc(31.6620px + 1.690141vw), 3.500rem);
+
+  --footer-padding: clamp(2.313rem, calc(26.4366px + 2.816901vw), 4.188rem)
+    clamp(0.938rem, calc(2.6761px + 3.286385vw), 3.125rem);
+  --footer-logogap: clamp(1.438rem, calc(7.507px + 4.131455vw), 4.188rem);
+}
+
+body {
+  @apply font-['DM_Sans'] text-(length:--bodytext) leading-[130%] scroll-smooth;
+
+  & hgroup,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-['Scotch_Display'];
+  }
+
+  & h1,
+  h2 {
+    @apply text-(length:--titles) leading-[120%];
+  }
+
+  & h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-(length:--subtitles) leading-[130%];
+  }
+}
