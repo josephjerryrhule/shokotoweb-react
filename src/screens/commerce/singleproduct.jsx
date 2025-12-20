@@ -67,9 +67,9 @@ function SingleProduct() {
       try {
         // Fetch the single product first
         const productData = await fetchSingleProduct(slug);
-        
+
         // Immediately start fetching recommended products if category exists
-        const recommendedPromise = 
+        const recommendedPromise =
           productData.categories && productData.categories.length > 0
             ? fetchProducts({
                 category: productData.categories[0].slug,
@@ -77,10 +77,10 @@ function SingleProduct() {
                 exclude: [productData.id],
               }).catch(() => [])
             : Promise.resolve([]);
-        
+
         // Wait for recommended products to finish
         const recommendedData = await recommendedPromise;
-        
+
         // Update all state at once
         setProduct(productData);
         setRecommendedProducts(recommendedData);
