@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useParams } from "react-router";
 import Breadcrumb from "../../components/Breadcrumb";
 import ProductCard from "../../components/ProductCard";
 import TopLoadingBar from "../../components/TopLoadingBar";
@@ -11,6 +12,7 @@ import {
 } from "../../api/products";
 
 function Shop() {
+  const { slug: categorySlug } = useParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -82,29 +84,69 @@ function Shop() {
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
-        // Fetch everything in parallel
-        const [productsData, categoriesData, attributesData] = await Promise.all([
-          fetchProducts({ per_page: 12, page: 1 }),
-          fetchCategories(),
-          fetchAttributes(),
-        ]);
+        // Check if we have cached filter data
+        const cachedFilterData = localStorage.getItem('shop_filter_data');
+        const cacheTimestamp = localStorage.getItem('shop_filter_data_timestamp');
+        const cacheAge = cacheTimestamp ? Date.now() - parseInt(cacheTimestamp) : Infinity;
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-        // Fetch terms for each attribute
-        const attributesWithTerms = await Promise.all(
-          attributesData.map(async (attr) => {
-            try {
-              const terms = await fetchAttributeTerms(attr.id);
-              return { ...attr, terms };
-            } catch (error) {
-              console.error(`Failed to fetch terms for ${attr.name}:`, error);
-              return { ...attr, terms: [] };
-            }
-          })
-        );
+        let categoriesData, attributesWithTerms;
+        
+        if (cachedFilterData && cacheAge < CACHE_DURATION) {
+          // Use cached filter data
+          const cached = JSON.parse(cachedFilterData);
+          categoriesData = cached.categories;
+          attributesWithTerms = cached.attributes;
+          setFilterData({ categories: categoriesData, attributes: attributesWithTerms });
+        } else {
+          // Fetch filter data
+          const [categoriesDataFetch, attributesData] = await Promise.all([
+            fetchCategories(),
+            fetchAttributes(),
+          ]);
 
+          // Fetch terms for each attribute
+          attributesWithTerms = await Promise.all(
+            attributesData.map(async (attr) => {
+              try {
+                const terms = await fetchAttributeTerms(attr.id);
+                return { ...attr, terms };
+              } catch (error) {
+                console.error(`Failed to fetch terms for ${attr.name}:`, error);
+                return { ...attr, terms: [] };
+              }
+            })
+          );
+
+          categoriesData = categoriesDataFetch;
+          
+          // Cache the filter data
+          localStorage.setItem('shop_filter_data', JSON.stringify({
+            categories: categoriesData,
+            attributes: attributesWithTerms
+          }));
+          localStorage.setItem('shop_filter_data_timestamp', Date.now().toString());
+          
+          setFilterData({ categories: categoriesData, attributes: attributesWithTerms });
+        }
+
+        // Build initial params with category if present in URL
+        const initialParams = { per_page: 12, page: 1 };
+        if (categorySlug) {
+          initialParams.category = categorySlug;
+        }
+
+        // Fetch products
+        const productsData = await fetchProducts(initialParams);
+        
         // Set all data at once
         setProducts(productsData);
-        setFilterData({ categories: categoriesData, attributes: attributesWithTerms });
+        
+        // Set initial filter if category slug is in URL
+        if (categorySlug) {
+          setSelectedFilters({ categories: [categorySlug] });
+        }
+        
         setHasMore(productsData.length === 12);
       } catch (error) {
         console.error("Failed to load initial data:", error);
@@ -114,7 +156,7 @@ function Shop() {
     };
 
     loadInitialData();
-  }, []);
+  }, [categorySlug]);
 
   // Reset products when filters change
   const isInitialMount = useRef(true);
@@ -169,60 +211,125 @@ function Shop() {
     setSelectedFilters(newFilters);
   };
 
+  // Get current category name
+  const currentCategory = categorySlug 
+    ? filterData.categories.find(cat => cat.slug === categorySlug)
+    : null;
+  const pageTitle = currentCategory?.name || "Must haves from shoko.to";
+
   return (
     <>
       <TopLoadingBar isLoading={initialLoading} />
       <main className="p-(--singleproduct-padding) min-h-screen">
-        <Breadcrumb
-          items={[
-            { label: "Home", link: "/" },
-            { label: "Must haves from shoko.to" },
-          ]}
-        />
+        {initialLoading ? (
+          // Full page loading skeleton
+          <>
+            {/* Breadcrumb skeleton */}
+            <div className="flex items-center gap-2 mb-6 animate-pulse">
+              <div className="h-4 w-16 bg-gray-200 rounded"></div>
+              <span className="text-gray-400">|</span>
+              <div className="h-4 w-20 bg-gray-200 rounded"></div>
+            </div>
 
-        <h1 className="max-w-125 mb-8">
-          Must haves from <em className="font-medium">shoko.to</em>
-        </h1>
+            {/* Title skeleton */}
+            <div className="mb-8 animate-pulse">
+              <div className="h-8 w-64 bg-gray-200 rounded"></div>
+            </div>
 
-        <div className="flex lg:flex-row flex-col gap-12.5">
-          <div className="filter-area lg:w-1/4 w-full">
-            <ShopFilters
-              selectedFilters={selectedFilters}
-              onFilterChange={handleFilterChange}
-              filterData={filterData}
-              loading={initialLoading}
-            />
-          </div>
-          <div className="products-loop-area lg:w-3/4 w-full">
-            {(initialLoading || (loading && products.length === 0)) ? (
-              // Loading skeleton (initial or when filtering)
-              <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4.25">
-                {Array.from({ length: 12 }).map((_, index) => (
-                  <div
-                    key={`skeleton-${index}`}
-                    className="relative p-2.5 min-h-(--productslide-height) flex items-end animate-pulse"
-                  >
-                    <div className="absolute inset-0 m-2.5 bg-gray-300 rounded"></div>
-                    <div className="relative bg-white p-3.5 w-full flex gap-4 justify-between">
-                      <div className="h-4 bg-gray-200 rounded flex-1"></div>
-                      <div className="h-4 w-16 bg-gray-200 rounded"></div>
-                    </div>
-                  </div>
-                ))}
+            {/* Content area skeleton */}
+            <div className="flex lg:flex-row flex-col gap-12.5">
+              {/* Filter skeleton */}
+              <div className="filter-area lg:w-1/4 w-full">
+                <div className="space-y-4 animate-pulse">
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
               </div>
-            ) : (
-              <>
+
+              {/* Products skeleton */}
+              <div className="products-loop-area lg:w-3/4 w-full">
                 <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4.25">
-                  {products.map((product, index) => (
-                    <ProductCard
-                      key={`product-id-${product.id}-${index}`}
-                      product={product}
-                    />
+                  {Array.from({ length: 12 }).map((_, index) => (
+                    <div
+                      key={`skeleton-${index}`}
+                      className="relative p-2.5 min-h-(--productslide-height) flex items-end animate-pulse"
+                    >
+                      <div className="absolute inset-0 m-2.5 bg-gray-300 rounded"></div>
+                      <div className="relative bg-white p-3.5 w-full flex gap-4 justify-between">
+                        <div className="h-4 bg-gray-200 rounded flex-1"></div>
+                        <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <Breadcrumb
+              items={
+                currentCategory
+                  ? [
+                      { label: "Home", link: "/" },
+                      { label: "Shop", link: "/shop" },
+                      { label: currentCategory.name },
+                    ]
+                  : [
+                      { label: "Home", link: "/" },
+                      { label: "Must haves from shoko.to" },
+                    ]
+              }
+            />
 
-                {/* Loading indicator - only for pagination */}
-                {loading && hasMore && products.length > 0 && (
+            <h1 className="max-w-125 mb-8">
+              {currentCategory ? (
+                currentCategory.name
+              ) : (
+                <>Must haves from <em className="font-medium">shoko.to</em></>
+              )}
+            </h1>
+
+            <div className="flex lg:flex-row flex-col gap-12.5 items-stretch">
+              <div className="filter-area lg:sticky top-20 lg:w-1/4 w-full h-full">
+                <ShopFilters
+                  selectedFilters={selectedFilters}
+                  onFilterChange={handleFilterChange}
+                  filterData={filterData}
+                  loading={initialLoading}
+                />
+              </div>
+              <div className="products-loop-area lg:w-3/4 w-full">
+                {loading && products.length === 0 ? (
+                  // Loading skeleton (when filtering)
+                  <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4.25">
+                    {Array.from({ length: 12 }).map((_, index) => (
+                      <div
+                        key={`skeleton-${index}`}
+                        className="relative p-2.5 min-h-(--productslide-height) flex items-end animate-pulse"
+                      >
+                        <div className="absolute inset-0 m-2.5 bg-gray-300 rounded"></div>
+                        <div className="relative bg-white p-3.5 w-full flex gap-4 justify-between">
+                          <div className="h-4 bg-gray-200 rounded flex-1"></div>
+                          <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4.25">
+                      {products.map((product, index) => (
+                        <ProductCard
+                          key={`product-id-${product.id}-${index}`}
+                          product={product}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Loading indicator - only for pagination */}
+                    {loading && hasMore && products.length > 0 && (
                   <div className="flex justify-center items-center py-8">
                     <svg
                       width="24"
@@ -249,12 +356,14 @@ function Shop() {
                   </div>
                 )}
 
-                {/* Intersection observer target */}
-                <div ref={observerTarget} className="h-10" />
-              </>
-            )}
-          </div>
-        </div>
+                    {/* Intersection observer target */}
+                    <div ref={observerTarget} className="h-10" />
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </>
   );

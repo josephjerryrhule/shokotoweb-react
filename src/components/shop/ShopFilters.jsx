@@ -164,7 +164,7 @@ const FilterSection = ({
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => handleFilterChange(type, item.slug)}
-                  className="w-4 h-4 border-gray-300 rounded focus:ring-0 focus:ring-offset-0"
+                  className="w-4 h-4 border-gray-300 rounded focus:ring-0 focus:ring-offset-0 accent-black"
                 />
                 <span className="text-sm">
                   {item[nameKey]}
