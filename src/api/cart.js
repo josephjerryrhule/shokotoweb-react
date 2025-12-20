@@ -212,3 +212,27 @@ export async function updateCustomer(billingAddress, shippingAddress = null) {
   }
 }
 
+// Select shipping rate
+export async function selectShippingRate(rateId, packageId = null) {
+  try {
+    const cartToken = getCartToken();
+    
+    const response = await woo.post(
+      "/cart/select-shipping-rate",
+      {
+        rate_id: rateId,
+        package_id: packageId,
+      },
+      {
+        headers: {
+          "Cart-Token": cartToken,
+        },
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error selecting shipping rate:", error);
+    throw error;
+  }
+}

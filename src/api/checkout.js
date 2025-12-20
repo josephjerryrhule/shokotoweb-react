@@ -65,3 +65,21 @@ export async function getOrder(orderId) {
     throw error;
   }
 }
+
+// Get available payment methods
+export async function getPaymentMethods() {
+  try {
+    const cartToken = getCartToken();
+
+    const response = await woo.get("/payment-methods", {
+      headers: {
+        "Cart-Token": cartToken,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching payment methods:", error);
+    throw error;
+  }
+}
