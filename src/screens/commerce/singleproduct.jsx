@@ -106,6 +106,60 @@ function SingleProduct() {
       // Add to cart - WooCommerce will handle updating quantity if item exists
       await addToCart(product.id, quantity, selectedVariation?.id || null);
 
+      // Get price
+      const price = product.prices?.price
+        ? (
+            parseInt(product.prices.price) /
+            Math.pow(10, product.prices.currency_minor_unit || 2)
+          ).toFixed(2)
+        : "0.00";
+      const currencySymbol = product.prices?.currency_code || "₵";
+
+      // Show custom success toast
+      toast.custom(
+        (t) => (
+          <div
+            className={`${
+              t.visible ? "animate-enter" : "animate-leave"
+            } max-w-md w-full bg-white shadow-lg rounded-[1px] pointer-events-auto flex`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="shrink-0 pt-0.5">
+                  <img
+                    className="h-16 w-16 rounded object-cover"
+                    src={product.images?.[0]?.src}
+                    alt={product.name}
+                  />
+                </div>
+                <div className="ml-3 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[10px] font-medium text-gray-900">
+                      Added to cart successfully
+                    </p>
+                  </div>
+                  <p className="mt-1 text-[10px] text-gray-700 font-semibold line-clamp-1">
+                    {product.name}
+                  </p>
+                  <p className="mt-1 text-[10px] text-gray-500">
+                    {currencySymbol} {price} × {quantity}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex border-l border-gray-200">
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-gray-600 hover:text-gray-500 focus:outline-none"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ),
+        { duration: 4000 }
+      );
+
       // Show "Added to cart" feedback
       setItemAdded(true);
       setTimeout(() => {
@@ -229,9 +283,12 @@ function SingleProduct() {
             {/* Hero Section */}
             <div className="w-full flex items-start gap-12 lg:flex-row flex-col">
               <div className="gallery-area w-full lg:w-3/5">
-                <ProductGallery images={product.images} productName={product.name} />
+                <ProductGallery
+                  images={product.images}
+                  productName={product.name}
+                />
               </div>
-              
+
               <div className="product-info-area flex flex-col gap-10 lg:gap-16 w-full">
                 <div className="title-price-area flex flex-col gap-4">
                   <h1>{product.name}</h1>

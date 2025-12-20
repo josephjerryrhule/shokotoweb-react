@@ -1,5 +1,36 @@
 @import "tailwindcss";
 
+/* Toast animations */
+@keyframes toast-enter {
+  0% {
+    transform: translate3d(0, calc(100% + 1rem), 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-leave {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, calc(100% + 1rem), 0);
+    opacity: 0;
+  }
+}
+
+.animate-enter {
+  animation: toast-enter 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+.animate-leave {
+  animation: toast-leave 0.4s cubic-bezier(0.06, 0.71, 0.55, 1) forwards;
+}
+
 :root {
   /* Header Styles */
   --navpadding: 0.94rem clamp(1rem, calc(4.0282px + 3.192488vw), 3.125rem);
