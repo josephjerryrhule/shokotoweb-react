@@ -12,13 +12,4 @@ export default defineConfig({
       },
     }),
   ],
-  server: {
-    proxy: {
-      '/wp-json': {
-        target: 'https://staging.shokoto.co',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
 })
