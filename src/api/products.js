@@ -1,7 +1,7 @@
 import woo from "../lib/woocommerce";
 
 const CACHE_KEY = "products_cache";
-const CACHE_DURATION = 1 * 60 * 1000; // 2 minutes
+const CACHE_DURATION = 5 * 60 * 1000; // 2 minutes
 
 // Fetch products list
 export async function fetchProducts(params = {}) {

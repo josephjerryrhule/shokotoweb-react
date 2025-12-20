@@ -17,6 +17,8 @@ function ProductCard({ product }) {
       className={`relative p-2.5 bg-cover bg-center bg-no-repeat min-h-(--productslide-height) flex items-end ${
         isOutOfStock ? "opacity-50" : ""
       }`}
+      data-product-id={product.id}
+      title={product.name}
       style={{
         backgroundImage: `url(${product.images[0]?.src})`,
       }}

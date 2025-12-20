@@ -2,42 +2,140 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import Breadcrumb from "../../components/Breadcrumb";
 import ProductCard from "../../components/ProductCard";
 import TopLoadingBar from "../../components/TopLoadingBar";
-import { fetchProducts } from "../../api/products";
+import ShopFilters from "../../components/shop/ShopFilters";
+import { 
+  fetchProducts, 
+  fetchCategories, 
+  fetchAttributes, 
+  fetchAttributeTerms 
+} from "../../api/products";
 
 function Shop() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedFilters, setSelectedFilters] = useState({});
+  const [filterData, setFilterData] = useState({ categories: [], attributes: [] });
   const observerTarget = useRef(null);
 
-  const loadProducts = useCallback(async (pageNum) => {
-    if (loading || !hasMore) return;
-    
-    setLoading(true);
-    try {
-      const data = await fetchProducts({
-        per_page: 12,
-        page: pageNum,
-      });
-      
-      if (data.length === 0) {
-        setHasMore(false);
-      } else {
-        setProducts((prev) => [...prev, ...data]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch products:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [loading, hasMore]);
+  const buildFilterParams = useCallback(() => {
+    const params = {};
 
+    // Handle categories
+    if (selectedFilters.categories?.length > 0) {
+      params.category = selectedFilters.categories.join(",");
+    }
+
+    // Handle attributes (size, color, etc.)
+    Object.keys(selectedFilters).forEach((key) => {
+      if (key.startsWith("attribute_") && selectedFilters[key]?.length > 0) {
+        const attributeId = key.replace("attribute_", "");
+        // Find the attribute to get its slug for API call
+        const attribute = filterData.attributes.find(attr => attr.id.toString() === attributeId);
+        if (attribute) {
+          // WooCommerce attributes use taxonomy (e.g., "pa_color") - strip "pa_" prefix
+          const slug = attribute.slug || (attribute.taxonomy ? attribute.taxonomy.replace('pa_', '') : null);
+          if (slug) {
+            params[`attribute_${slug}`] = selectedFilters[key].join(",");
+          }
+        }
+      }
+    });
+
+    console.log("Filter params:", params); // Debug log
+    return params;
+  }, [selectedFilters, filterData.attributes]);
+
+  const loadProducts = useCallback(
+    async (pageNum, resetProducts = false) => {
+      if (loading || (!hasMore && !resetProducts)) return;
+
+      setLoading(true);
+      try {
+        const filterParams = buildFilterParams();
+        const data = await fetchProducts({
+          per_page: 12,
+          page: pageNum,
+          ...filterParams,
+        });
+
+        if (data.length === 0) {
+          setHasMore(false);
+        } else {
+          setProducts((prev) => (resetProducts ? data : [...prev, ...data]));
+          if (data.length < 12) {
+            setHasMore(false);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading, hasMore, buildFilterParams]
+  );
+
+  // Load initial data (both products and filters)
   useEffect(() => {
-    loadProducts(1);
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        // Fetch everything in parallel
+        const [productsData, categoriesData, attributesData] = await Promise.all([
+          fetchProducts({ per_page: 12, page: 1 }),
+          fetchCategories(),
+          fetchAttributes(),
+        ]);
+
+        // Fetch terms for each attribute
+        const attributesWithTerms = await Promise.all(
+          attributesData.map(async (attr) => {
+            try {
+              const terms = await fetchAttributeTerms(attr.id);
+              return { ...attr, terms };
+            } catch (error) {
+              console.error(`Failed to fetch terms for ${attr.name}:`, error);
+              return { ...attr, terms: [] };
+            }
+          })
+        );
+
+        // Set all data at once
+        setProducts(productsData);
+        setFilterData({ categories: categoriesData, attributes: attributesWithTerms });
+        setHasMore(productsData.length === 12);
+      } catch (error) {
+        console.error("Failed to load initial data:", error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadInitialData();
   }, []);
 
+  // Reset products when filters change
+  const isInitialMount = useRef(true);
+  
   useEffect(() => {
+    // Skip initial mount since data is loaded in the initial useEffect
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
+    setProducts([]);
+    setPage(1);
+    setHasMore(true);
+    loadProducts(1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFilters]);
+
+  useEffect(() => {
+    const currentTarget = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
@@ -47,26 +145,32 @@ function Shop() {
       { threshold: 0.1 }
     );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+    if (currentTarget) {
+      observer.observe(currentTarget);
     }
 
     return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
     };
   }, [hasMore, loading]);
 
   useEffect(() => {
     if (page > 1) {
-      loadProducts(page);
+      loadProducts(page, false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
+
+  const handleFilterChange = (newFilters) => {
+    console.log("Filter changed:", newFilters); // Debug log
+    setSelectedFilters(newFilters);
+  };
 
   return (
     <>
-      <TopLoadingBar isLoading={loading && products.length === 0} />
+      <TopLoadingBar isLoading={initialLoading} />
       <main className="p-(--singleproduct-padding) min-h-screen">
         <Breadcrumb
           items={[
@@ -80,10 +184,17 @@ function Shop() {
         </h1>
 
         <div className="flex lg:flex-row flex-col gap-12.5">
-          <div className="filte-area w-1/3"></div>
-          <div className="products-loop-area w-2/3">
-            {loading && products.length === 0 ? (
-              // Initial loading skeleton
+          <div className="filter-area lg:w-1/4 w-full">
+            <ShopFilters
+              selectedFilters={selectedFilters}
+              onFilterChange={handleFilterChange}
+              filterData={filterData}
+              loading={initialLoading}
+            />
+          </div>
+          <div className="products-loop-area lg:w-3/4 w-full">
+            {(initialLoading || (loading && products.length === 0)) ? (
+              // Loading skeleton (initial or when filtering)
               <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4.25">
                 {Array.from({ length: 12 }).map((_, index) => (
                   <div
@@ -101,8 +212,11 @@ function Shop() {
             ) : (
               <>
                 <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4.25">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                  {products.map((product, index) => (
+                    <ProductCard
+                      key={`product-id-${product.id}-${index}`}
+                      product={product}
+                    />
                   ))}
                 </div>
 
