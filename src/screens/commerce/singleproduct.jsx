@@ -65,7 +65,7 @@ function SingleProduct() {
           productData.categories && productData.categories.length > 0
             ? fetchProducts({
                 category: productData.categories[0].slug,
-                per_page: 10,
+                per_page: 20,
                 exclude: [productData.id],
               }).catch(() => [])
             : Promise.resolve([]);
