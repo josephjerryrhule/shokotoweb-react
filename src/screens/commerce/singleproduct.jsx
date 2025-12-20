@@ -55,6 +55,14 @@ function SingleProduct() {
   useEffect(() => {
     if (!slug) return;
 
+    // Reset state when slug changes
+    setLoading(true);
+    setProduct(null);
+    setRecommendedProducts([]);
+    setSelectedVariation(null);
+    setQuantity(1);
+    setThumbsSwiper(null);
+
     const loadProductAndRecommendations = async () => {
       try {
         // Fetch the single product first
