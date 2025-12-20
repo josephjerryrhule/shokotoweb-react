@@ -245,7 +245,7 @@ function SingleProduct() {
                           <img
                             src={image.src}
                             alt={image.alt || product.name}
-                            className="aspect-335/368 lg:aspect-711/788 w-full object-cover object-center h-full"
+                            className="aspect-335/368 lg:aspect-711/788 w-full object-cover object-[center_35%] h-full"
                           />
                         </SwiperSlide>
                       ))}
