@@ -4,6 +4,8 @@ import HeroSlide from "./home/heroslide";
 import CollectionSection from "./home/collectionsection";
 import HypeSection from "./home/hypesection";
 import ProductsSlide from "./home/productsslide";
+import LinkButton from "./home/linkbutton";
+import Breadcrumb from "./Breadcrumb";
 
 export default {
   Navbar,
@@ -12,4 +14,6 @@ export default {
   CollectionSection,
   HypeSection,
   ProductsSlide,
+  LinkButton,
+  Breadcrumb
 };

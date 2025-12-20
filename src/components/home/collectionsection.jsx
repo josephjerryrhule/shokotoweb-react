@@ -1,6 +1,6 @@
 import React from "react";
 import { hero2 } from "../../assets";
-import { Link } from "react-router";
+import LinkButton from "./linkbutton";
 
 function CollectionSection() {
   return (
@@ -11,12 +11,7 @@ function CollectionSection() {
       ></div>
       <div className="w-full flex flex-col gap-4">
         <h2>Long trousers</h2>
-        <Link
-          to="/shop"
-          className="bg-white text-black p-[12px_48px] block max-w-max transition-all duration-150 ease-in-out hover:bg-black hover:text-white border border-black"
-        >
-          Shop trousers
-        </Link>
+        <LinkButton link="/shop" title="Shop trousers" />
       </div>
     </div>
   );

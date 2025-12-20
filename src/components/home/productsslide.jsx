@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Autoplay, Pagination } from "swiper/modules";
 import { Link } from "react-router";
+import LinkButton from "./linkbutton";
 
 function ProductsSlide() {
   const [products, setProducts] = useState([]);
@@ -26,12 +27,7 @@ function ProductsSlide() {
     <div className="p-(--productslide-section-padding)">
       <div className="flex items-center justify-between pb-5">
         <h3>Top Selling</h3>
-        <Link
-          to="/shop"
-          className="bg-white text-black border border-black p-[12px_48px] transition-all duration-150 ease-in-out hover:bg-black hover:text-white"
-        >
-          Shop Now
-        </Link>
+        <LinkButton link="/shop" title="Shop Now" />
       </div>
       <Swiper
         className="products-slide-wrapper"
@@ -75,27 +71,33 @@ function ProductsSlide() {
               </SwiperSlide>
             ))
           : Array.isArray(products) &&
-            products.map((product) => {
-              const isOutOfStock = product.stock_status === "outofstock";
+            products
+              .filter((product) => product.is_in_stock)
+              .map((product) => {
+              const price = product.prices?.price ? 
+                (parseInt(product.prices.price) / Math.pow(10, product.prices.currency_minor_unit || 2)).toFixed(2) : 
+                "0.00";
+              const currencySymbol = product.prices?.currency_code || "₵";
+              
               return (
                 <SwiperSlide
                   key={product.id}
                   className="relative p-2.5 bg-cover bg-center bg-no-repeat min-h-(--productslide-height) flex! items-end"
                   style={{
                     backgroundImage: `url(${product.images[0]?.src})`,
-                    opacity: isOutOfStock ? 0.3 : 1,
                   }}
                 >
-                  <Link to={`/shop/${product.slug}`} className="block w-full">
+                  <Link
+                    to={`/product/${product.slug}`}
+                    className="block w-full"
+                  >
                     <div className="flex items-center bg-white p-3.5 w-full justify-between gap-4">
                       <span className="text-sm font-semibold line-clamp-1">
-                        {isOutOfStock ? "Sold Out" : product.name}
+                        {product.name}
                       </span>
-                      {!isOutOfStock && (
-                        <span className="text-gray-700 whitespace-nowrap text-sm">
-                          GHS {product.price}
-                        </span>
-                      )}
+                      <span className="text-gray-700 whitespace-nowrap text-sm">
+                        {currencySymbol} {price}
+                      </span>
                     </div>
                   </Link>
                 </SwiperSlide>
