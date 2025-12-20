@@ -149,9 +149,6 @@ const FilterSection = ({
                   )}
                   <span className={`text-sm ${isSelected ? "font-semibold" : ""}`}>
                     {decodedName}
-                    {item.count !== undefined && (
-                      <span className="text-gray-400 ml-1">({item.count})</span>
-                    )}
                   </span>
                 </button>
               );
@@ -171,9 +168,6 @@ const FilterSection = ({
                 />
                 <span className="text-sm">
                   {item[nameKey]}
-                  {item.count !== undefined && (
-                    <span className="text-gray-400 ml-1">({item.count})</span>
-                  )}
                 </span>
               </label>
             );

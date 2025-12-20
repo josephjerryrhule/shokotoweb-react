@@ -44,7 +44,6 @@ function Shop() {
       }
     });
 
-    console.log("Filter params:", params); // Debug log
     return params;
   }, [selectedFilters, filterData.attributes]);
 
@@ -135,6 +134,9 @@ function Shop() {
   }, [selectedFilters]);
 
   useEffect(() => {
+    // Don't set up observer until initial loading is complete
+    if (initialLoading) return;
+    
     const currentTarget = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
@@ -154,7 +156,7 @@ function Shop() {
         observer.unobserve(currentTarget);
       }
     };
-  }, [hasMore, loading]);
+  }, [hasMore, loading, page, initialLoading]);
 
   useEffect(() => {
     if (page > 1) {
@@ -164,7 +166,6 @@ function Shop() {
   }, [page]);
 
   const handleFilterChange = (newFilters) => {
-    console.log("Filter changed:", newFilters); // Debug log
     setSelectedFilters(newFilters);
   };
 

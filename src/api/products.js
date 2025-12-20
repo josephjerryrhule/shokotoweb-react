@@ -24,7 +24,6 @@ export async function fetchProducts(params = {}) {
         status: "publish",
         orderby: "date",
         order: "desc",
-        _fields: "id,name,prices,images,slug,is_in_stock",
         ...params,
       },
     });
