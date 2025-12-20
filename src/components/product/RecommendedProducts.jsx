@@ -1,7 +1,7 @@
 import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
-import { Link } from "react-router";
+import ProductCard from "../ProductCard";
 import "swiper/css";
 
 function RecommendedProducts({ products }) {
@@ -43,36 +43,11 @@ function RecommendedProducts({ products }) {
           },
         }}
       >
-        {inStockProducts.map((prod) => {
-            const price = prod.prices?.price
-              ? (
-                  parseInt(prod.prices.price) /
-                  Math.pow(10, prod.prices.currency_minor_unit || 2)
-                ).toFixed(2)
-              : "0.00";
-            const currencySymbol = prod.prices?.currency_code || "₵";
-
-            return (
-              <SwiperSlide key={prod.id}>
-                <Link
-                  to={`/product/${prod.slug}`}
-                  className="block relative p-2.5 bg-cover bg-center bg-no-repeat min-h-(--productslide-height) flex items-end"
-                  style={{
-                    backgroundImage: `url(${prod.images[0]?.src})`,
-                  }}
-                >
-                  <div className="flex items-center bg-white p-3.5 w-full justify-between gap-4">
-                    <span className="text-sm font-semibold line-clamp-1">
-                      {prod.name}
-                    </span>
-                    <span className="text-gray-700 whitespace-nowrap text-sm">
-                      {currencySymbol} {price}
-                    </span>
-                  </div>
-                </Link>
-              </SwiperSlide>
-            );
-          })}
+        {inStockProducts.map((prod) => (
+          <SwiperSlide key={prod.id}>
+            <ProductCard product={prod} />
+          </SwiperSlide>
+        ))}
       </Swiper>
     </div>
   );

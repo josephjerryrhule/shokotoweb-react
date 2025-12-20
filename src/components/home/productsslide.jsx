@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchProducts } from "../../api/products";
 import { Swiper, SwiperSlide } from "swiper/react";
+import ProductCard from "../ProductCard";
 
 import "swiper/css";
 import { Autoplay, Pagination } from "swiper/modules";
@@ -73,36 +74,11 @@ function ProductsSlide() {
           : Array.isArray(products) &&
             products
               .filter((product) => product.is_in_stock)
-              .map((product) => {
-                const price = product.prices?.price
-                  ? (
-                      parseInt(product.prices.price) /
-                      Math.pow(10, product.prices.currency_minor_unit || 2)
-                    ).toFixed(2)
-                  : "0.00";
-                const currencySymbol = product.prices?.currency_code || "₵";
-
-                return (
-                  <SwiperSlide key={product.id}>
-                    <Link
-                      to={`/product/${product.slug}`}
-                      className="relative p-2.5 bg-cover bg-center bg-no-repeat min-h-(--productslide-height) flex! items-end"
-                      style={{
-                        backgroundImage: `url(${product.images[0]?.src})`,
-                      }}
-                    >
-                      <div className="flex items-center bg-white p-3.5 w-full justify-between gap-4">
-                        <span className="text-sm font-semibold line-clamp-1">
-                          {product.name}
-                        </span>
-                        <span className="text-gray-700 whitespace-nowrap text-sm">
-                          {currencySymbol} {price}
-                        </span>
-                      </div>
-                    </Link>
-                  </SwiperSlide>
-                );
-              })}
+              .map((product) => (
+                <SwiperSlide key={product.id}>
+                  <ProductCard product={product} />
+                </SwiperSlide>
+              ))}
       </Swiper>
     </div>
   );

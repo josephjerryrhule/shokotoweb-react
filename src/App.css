@@ -94,6 +94,11 @@
       1.875rem
     )
     clamp(0.938rem, calc(2.6761px + 3.286385vw), 3.125rem) 5.31rem;
+  --singleproduct-galleryimg-h: clamp(
+    23rem,
+    calc(220.1127px + 39.43662vw),
+    49.25rem
+  );
 
   /* Footer Styles */
 
