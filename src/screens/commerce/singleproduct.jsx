@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { fetchSingleProduct } from "../../api/products";
+import { fetchSingleProduct, fetchProducts } from "../../api/products";
 import { addToCart } from "../../api/cart";
-import { useParams } from "react-router";
+import { useParams, Link } from "react-router";
 import TopLoadingBar from "../../components/TopLoadingBar";
 import Breadcrumb from "../../components/Breadcrumb";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, FreeMode, Navigation, Thumbs } from "swiper/modules";
 import "swiper/css";
-import "swiper/css/free-mode";
-import "swiper/css/navigation";
 import "swiper/css/thumbs";
 
 function SingleProduct() {
@@ -20,6 +18,7 @@ function SingleProduct() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [itemAdded, setItemAdded] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
 
   // Get current price display
   const getCurrentPrice = () => {
@@ -56,16 +55,36 @@ function SingleProduct() {
   useEffect(() => {
     if (!slug) return;
 
-    fetchSingleProduct(slug)
-      .then((data) => {
-        setProduct(data);
+    const loadProductAndRecommendations = async () => {
+      try {
+        // Fetch the single product first
+        const productData = await fetchSingleProduct(slug);
+        
+        // Immediately start fetching recommended products if category exists
+        const recommendedPromise = 
+          productData.categories && productData.categories.length > 0
+            ? fetchProducts({
+                category: productData.categories[0].slug,
+                per_page: 10,
+                exclude: [productData.id],
+              }).catch(() => [])
+            : Promise.resolve([]);
+        
+        // Wait for recommended products to finish
+        const recommendedData = await recommendedPromise;
+        
+        // Update all state at once
+        setProduct(productData);
+        setRecommendedProducts(recommendedData);
         setLoading(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Failed to fetch product:", error);
         setProduct(null);
         setLoading(false);
-      });
+      }
+    };
+
+    loadProductAndRecommendations();
   }, [slug]);
 
   const handleAddToCart = async (e) => {
@@ -121,20 +140,73 @@ function SingleProduct() {
             <div className="h-6 bg-gray-200 rounded w-48 mb-8"></div>
 
             {/* Hero Section Skeleton */}
-            <div className="w-full flex items-start gap-12">
+            <div className="w-full flex items-start gap-12 md:flex-row flex-col">
               <div className="gallery-area w-full">
-                <div className="w-full aspect-square bg-gray-300 rounded"></div>
+                <div className="flex gap-4 lg:flex-row flex-col-reverse">
+                  {/* Thumbnails Skeleton */}
+                  <div className="lg:w-24 w-full">
+                    <div className="hidden lg:flex lg:flex-col gap-2.5">
+                      <div className="w-full h-24 bg-gray-300 rounded"></div>
+                      <div className="w-full h-24 bg-gray-300 rounded"></div>
+                      <div className="w-full h-24 bg-gray-300 rounded"></div>
+                      <div className="w-full h-24 bg-gray-300 rounded"></div>
+                    </div>
+                    <div className="flex lg:hidden gap-2.5">
+                      <div className="w-24 h-24 bg-gray-300 rounded"></div>
+                      <div className="w-24 h-24 bg-gray-300 rounded"></div>
+                      <div className="w-24 h-24 bg-gray-300 rounded"></div>
+                      <div className="w-24 h-24 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+
+                  {/* Main Image Skeleton */}
+                  <div className="flex-1">
+                    <div className="w-full aspect-square bg-gray-300 rounded"></div>
+                  </div>
+                </div>
               </div>
-              <div className="product-info-area flex flex-col gap-7.5 w-full">
+
+              <div className="product-info-area flex flex-col gap-16 w-full">
                 <div className="title-price-area flex flex-col gap-4">
                   <div className="h-12 bg-gray-200 rounded w-3/4"></div>
                   <div className="h-8 bg-gray-200 rounded w-32"></div>
                 </div>
-                <div className="space-y-3 mt-4">
+                <div className="space-y-3">
                   <div className="h-4 bg-gray-200 rounded"></div>
                   <div className="h-4 bg-gray-200 rounded w-5/6"></div>
                   <div className="h-4 bg-gray-200 rounded w-4/6"></div>
                 </div>
+                <div className="space-y-4">
+                  <div className="h-10 bg-gray-200 rounded w-40"></div>
+                  <div className="flex gap-2">
+                    <div className="h-10 w-16 bg-gray-200 rounded"></div>
+                    <div className="h-10 w-16 bg-gray-200 rounded"></div>
+                    <div className="h-10 w-16 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="h-12 w-32 bg-gray-200 rounded"></div>
+                  <div className="h-12 flex-1 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recommended Section Skeleton */}
+            <div className="pt-30">
+              <div className="h-8 bg-gray-200 rounded w-48 mb-5"></div>
+              <div className="flex gap-4 overflow-hidden">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div
+                    key={`rec-skeleton-${index}`}
+                    className="min-w-[280px] min-h-(--productslide-height) relative"
+                  >
+                    <div className="absolute inset-0 bg-gray-300 rounded"></div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-white p-3.5 flex gap-4 justify-between">
+                      <div className="h-4 bg-gray-200 rounded flex-1"></div>
+                      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -158,14 +230,14 @@ function SingleProduct() {
                       thumbs={{ swiper: thumbsSwiper }}
                       autoplay={{ delay: 5000, disableOnInteraction: false }}
                       spaceBetween={10}
-                      className="main-swiper w-full lg:w-3/4"
+                      className="main-swiper w-full lg:w-5/6"
                     >
                       {product.images.map((image, index) => (
                         <SwiperSlide key={index}>
                           <img
                             src={image.src}
                             alt={image.alt || product.name}
-                            className="aspect-335/368 lg:aspect-711/788 w-full object-cover object-top h-full"
+                            className="aspect-335/368 lg:aspect-711/788 w-full object-cover object-center h-full"
                           />
                         </SwiperSlide>
                       ))}
@@ -177,18 +249,21 @@ function SingleProduct() {
                       freeMode
                       watchSlidesProgress
                       modules={[FreeMode, Thumbs]}
-                      className="thumbs-swiper w-full lg:w-1/4"
+                      className="thumbs-swiper w-full lg:w-1/6"
                       breakpoints={{
                         0: {
                           direction: "horizontal",
                         },
-                        1280: {
+                        1024: {
                           direction: "vertical",
                         },
                       }}
                     >
                       {product.images.map((image, index) => (
-                        <SwiperSlide className="h-fit!" key={index}>
+                        <SwiperSlide
+                          className="h-fit! product-thumb-image not-[.swiper-slide-thumb-active]:opacity-50 hover:opacity-100"
+                          key={index}
+                        >
                           <img
                             src={image.src}
                             alt={image.alt || product.name}
@@ -202,7 +277,7 @@ function SingleProduct() {
                   <div className="w-full aspect-square bg-gray-300 rounded"></div>
                 )}
               </div>
-              <div className="product-info-area flex flex-col gap-16 w-full">
+              <div className="product-info-area flex flex-col gap-10 lg:gap-16 w-full">
                 <div className="title-price-area flex flex-col gap-4">
                   <h1>{product.name}</h1>
                   <span className="text-black whitespace-nowrap text-(length:--pricetext)">
@@ -252,12 +327,6 @@ function SingleProduct() {
                                   );
 
                                   if (!variation) {
-                                    console.log(
-                                      "No variation found for:",
-                                      term.name,
-                                      term.slug,
-                                      attribute.name
-                                    );
                                     return null;
                                   }
 
@@ -300,25 +369,26 @@ function SingleProduct() {
                         <button
                           type="button"
                           onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          className="px-4 py-2 hover:bg-black hover:text-white transition-all duration-300 ease-in-out cursor-pointer"
                         >
                           -
                         </button>
                         <input
-                          type="number"
+                          disabled
+                          type="text"
                           value={quantity}
                           onChange={(e) =>
                             setQuantity(
                               Math.max(1, parseInt(e.target.value) || 1)
                             )
                           }
-                          className="w-16 text-center border-x border-gray-300"
+                          className="w-16 text-center outline-none"
                           min="1"
                         />
                         <button
                           type="button"
                           onClick={() => setQuantity(quantity + 1)}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          className="px-4 py-2 hover:bg-black hover:text-white transition-all duration-300 ease-in-out cursor-pointer"
                         >
                           +
                         </button>
@@ -349,6 +419,72 @@ function SingleProduct() {
             {/* End of Hero Section */}
 
             {/* Recommended Section */}
+            <div className="pt-30">
+              <div className="pb-5">
+                <h3>You may also like</h3>
+              </div>
+
+              <Swiper
+                className="products-slide-wrapper"
+                modules={[Autoplay]}
+                spaceBetween={17}
+                autoplay={{
+                  delay: 0,
+                  disableOnInteraction: false,
+                  pauseOnMouseEnter: true,
+                }}
+                speed={5000}
+                loop={true}
+                freeMode={true}
+                breakpoints={{
+                  0: {
+                    slidesPerView: 1.2,
+                  },
+                  768: {
+                    slidesPerView: 3,
+                  },
+                  1024: {
+                    slidesPerView: 4,
+                  },
+                  1280: {
+                    slidesPerView: 5,
+                  },
+                }}
+              >
+                {recommendedProducts
+                  .filter((prod) => prod.is_in_stock)
+                  .map((prod) => {
+                    const price = prod.prices?.price
+                      ? (
+                          parseInt(prod.prices.price) /
+                          Math.pow(10, prod.prices.currency_minor_unit || 2)
+                        ).toFixed(2)
+                      : "0.00";
+                    const currencySymbol = prod.prices?.currency_code || "₵";
+
+                    return (
+                      <SwiperSlide key={prod.id}>
+                        <Link
+                          to={`/product/${prod.slug}`}
+                          className="relative p-2.5 bg-cover bg-center bg-no-repeat min-h-(--productslide-height) flex items-end"
+                          style={{
+                            backgroundImage: `url(${prod.images[0]?.src})`,
+                          }}
+                        >
+                          <div className="flex items-center bg-white p-3.5 w-full justify-between gap-4">
+                            <span className="text-sm font-semibold line-clamp-1">
+                              {prod.name}
+                            </span>
+                            <span className="text-gray-700 whitespace-nowrap text-sm">
+                              {currencySymbol} {price}
+                            </span>
+                          </div>
+                        </Link>
+                      </SwiperSlide>
+                    );
+                  })}
+              </Swiper>
+            </div>
             {/* End of Recommended Section */}
           </>
         )}
